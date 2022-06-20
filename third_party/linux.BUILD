@@ -34,19 +34,21 @@ make(
     # directory during the build process (e.g.,
     # `tools/scripts/Makefile.include`).
     build_data = [":source"],
-    # This is the target passed to `make` (i.e., `make libbpf.a`).
-    targets = ["libbpf.a"],
+    # This is the target passed to `make` (i.e., `make libbpf.so`).
+    targets = ["libbpf.so"],
+    out_shared_libs = ["libbpf.so", "libbpf.so.0"],
     # This copy should be done automatically by the rules_foreign_cc tool, yet
     # it is not. This may happen because the libbpf library is not at the root
     # of the Linux kernel tree. Perhaps the rules_foreign_cc tool makes an
     # assumption that the library source is at the root of the kernel tree,
-    # which causes its copy of libbpf.a to fail since it cannot find the static
+    # which causes its copy of libbpf.so to fail since it cannot find the static
     # library at the root of the kernel tree.
     #
     # Note: The values of the environment variables below are written to
     # GNUMake.log, so look at that file to inspect them. You can also look at
     # that log to see which other environment variables exist.
-    postfix_script = "cp $EXT_BUILD_ROOT/external/linux/tools/lib/bpf/libbpf.a $INSTALLDIR/lib/libbpf.a; " +
+    postfix_script = "cp $EXT_BUILD_ROOT/external/linux/tools/lib/bpf/libbpf.so $INSTALLDIR/lib/libbpf.so; " +
+    "cp $EXT_BUILD_ROOT/external/linux/tools/lib/bpf/libbpf.so $INSTALLDIR/lib/libbpf.so.0; " +
     # By making the `libbpf` directory and copying the libbpf header files into
     # it, we can have the #include paths in the project prefixed by `libbpf`. In
     # other words, we can do `#include "libbpf/header.h"` instead of
