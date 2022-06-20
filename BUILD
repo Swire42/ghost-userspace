@@ -390,6 +390,29 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "pyfifo_bind",
+    srcs = ["schedulers/pyfifo/fifo_agent.cc"],
+    copts = compiler_flags + ["-Wall", "-shared", "-fPIC", "-I/usr/include/python3.8 -Iexternal/pybind11"],
+    linkshared=True,
+    linkstatic=False,
+    deps = [
+        "@pybind11//:headers",
+        ":agent",
+        ":fifo_centralized_scheduler",
+        "@com_google_absl//absl/debugging:symbolize",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+py_binary(
+    name = "pyfifo",
+    srcs = ["schedulers/pyfifo/pyfifo.py"],
+    data = [":pyfifo_bind",
+        "@linux//:libbpf",
+    ],
+)
+
 cc_library(
     name = "ghost",
     srcs = [

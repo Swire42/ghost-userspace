@@ -96,3 +96,24 @@ pip_install(
    name = "my_deps",
    requirements = "//:requirements.txt",
 )
+
+
+
+
+
+new_local_repository(
+    name = "pybind11",
+    path = "/usr/local/lib/python3.8/dist-packages/pybind11/include",
+    build_file_content = """
+package(
+    default_visibility = [
+        "//visibility:public",
+    ],
+)
+
+cc_library(
+    name = "headers",
+    srcs = glob(["**/*.h"]),
+)
+""",
+)
