@@ -391,6 +391,39 @@ cc_library(
 )
 
 cc_binary(
+    name = "bindertest",
+    srcs = ["schedulers/bindertest/tmp/libbindertest.cpp"],
+    copts = compiler_flags + ["-Wall", "-shared", "-fPIC", "-I/usr/include/python3.8 -Iexternal/pybind11 -I. -Ilib -Iexternal/com_google_absl -Iexternal/linux/libbpf/include/"],
+    linkshared=True,
+    linkstatic=False,
+    deps = [
+        "@pybind11//:headers",
+        ":agent",
+        "@com_google_absl//absl/debugging:symbolize",
+        "@com_google_absl//absl/flags:parse",
+        ":base",
+        ":ghost",
+        ":shared",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/synchronization",
+        "@linux//:libbpf",
+    ],
+)
+
+py_binary(
+    name = "bindertest_py",
+    srcs = ["schedulers/bindertest/bindertest_py.py"],
+    data = [":bindertest",
+        "@linux//:libbpf",
+    ],
+)
+
+cc_binary(
     name = "pyfifo_bind",
     srcs = ["schedulers/pyfifo/fifo_agent.cc"],
     copts = compiler_flags + ["-Wall", "-shared", "-fPIC", "-I/usr/include/python3.8 -Iexternal/pybind11"],
