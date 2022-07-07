@@ -413,6 +413,29 @@ py_binary(
     ],
 )
 
+cc_binary(
+    name = "pyfifo2_bind",
+    srcs = ["schedulers/pyfifo2/fifo_agent.cc", "schedulers/pyfifo2/gen.cc", "schedulers/pyfifo2/fifo_agent.h"],
+    copts = compiler_flags + ["-Wall", "-shared", "-fPIC", "-I/usr/include/python3.8 -Iexternal/pybind11"],
+    linkshared=True,
+    linkstatic=False,
+    deps = [
+        "@pybind11//:headers",
+        ":agent",
+        ":fifo_centralized_scheduler",
+        "@com_google_absl//absl/debugging:symbolize",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+py_binary(
+    name = "pyfifo2",
+    srcs = ["schedulers/pyfifo2/pyfifo2.py"],
+    data = [":pyfifo2_bind",
+        "@linux//:libbpf",
+    ],
+)
+
 cc_library(
     name = "ghost",
     srcs = [
