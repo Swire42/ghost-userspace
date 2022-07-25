@@ -13,10 +13,21 @@ class PyAgent(ghost.LocalAgent):
     pass
 
 class FullPyAgent(ghost.FullAgent_LocalEnclave_PyAgentConfig_):
-    pass
+    def __init__(self, config):
+        ghost.FullAgent_LocalEnclave_PyAgentConfig_.__init__(self, config)
+        print("Coucou toi")
+
+    def __del__(self):
+        print("Boobye")
 
 config = ghost.getConfig();
 
-#wrapconfig = ghost.PyWrapAgentConfig(config, (lambda conf: return ))
+wrapconfig = ghost.PyWrapAgentConfig(config, (lambda conf: FullPyAgent(conf)))
 
-#uap = ghost.AgentProcess_WrapFullAgent_PyWrapAgentConfig_
+uap = ghost.AgentProcess_WrapFullAgent_PyWrapAgentConfig_(wrapconfig);
+
+input()
+
+del uap
+
+print("Done!")

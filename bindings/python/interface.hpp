@@ -21,8 +21,7 @@ class PyAgentConfig : public AgentConfig {
 };
 
 #define FULLAGENT_T FullAgent<LocalEnclave, PyAgentConfig>
-#define FULLAGENTPTR_T std::unique_ptr< FULLAGENT_T >
-#define MAKEFULLAGENT_T std::function < FULLAGENTPTR_T (PyAgentConfig) >
+#define MAKEFULLAGENT_T std::function < FULLAGENT_T* (PyAgentConfig) >
 
 class PyWrapAgentConfig : public AgentConfig {
   PyAgentConfig config;
@@ -31,12 +30,12 @@ class PyWrapAgentConfig : public AgentConfig {
  public:
   PyWrapAgentConfig(PyAgentConfig conf, MAKEFULLAGENT_T cons);
   
-  FULLAGENTPTR_T make();
+  FULLAGENT_T* make();
 };
 
 class WrapFullAgent {
  public:
-  FULLAGENTPTR_T py_agent;
+  std::unique_ptr<FULLAGENT_T> py_agent;
 
   WrapFullAgent(PyWrapAgentConfig wconfig);
 

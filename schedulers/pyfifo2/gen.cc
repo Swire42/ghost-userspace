@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 namespace py = pybind11;
 
 #include "lib/topology.h"
@@ -13,55 +14,55 @@ namespace py = pybind11;
 #include "bindings/python/interface.hpp"
 
 namespace ghost {
-  //struct TrPB__Agent : public Agent {
-  //  using Agent::Agent;
+  struct TrPB__Agent : public Agent {
+    using Agent::Agent;
 
-  //  void StartBegin() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ Agent
-  //    , /* function name: */ StartBegin
-  //      ,
-  //    );
-  //  }
+    void StartBegin() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ Agent
+      , /* function name: */ StartBegin
+        ,
+      );
+    }
 
-  //  void StartComplete() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ Agent
-  //    , /* function name: */ StartComplete
-  //      ,
-  //    );
-  //  }
+    void StartComplete() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ Agent
+      , /* function name: */ StartComplete
+        ,
+      );
+    }
 
-  //  void TerminateBegin() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ Agent
-  //    , /* function name: */ TerminateBegin
-  //      ,
-  //    );
-  //  }
+    void TerminateBegin() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ Agent
+      , /* function name: */ TerminateBegin
+        ,
+      );
+    }
 
-  //  void TerminateComplete() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ Agent
-  //    , /* function name: */ TerminateComplete
-  //      ,
-  //    );
-  //  }
+    void TerminateComplete() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ Agent
+      , /* function name: */ TerminateComplete
+        ,
+      );
+    }
 
-  //  ghost::StatusWord const& status_word() const override {
-  //    PYBIND11_OVERRIDE_PURE(
-  //      /* return type:   */ ghost::StatusWord const&
-  //    , /* parent class:  */ Agent
-  //    , /* function name: */ status_word
-  //      ,
-  //    );
-  //  }
+    ghost::StatusWord const& status_word() const override {
+      PYBIND11_OVERRIDE_PURE(
+        /* return type:   */ ghost::StatusWord const&
+      , /* parent class:  */ Agent
+      , /* function name: */ status_word
+        ,
+      );
+    }
 
-  //};
+  };
 
   struct TrPB__Channel : public Channel {
     using Channel::Channel;
@@ -396,55 +397,68 @@ namespace ghost {
     using FullAgent<LocalEnclave,PyAgentConfig>::MakeAgent;
   };
 
-  //struct TrPB__LocalAgent : public LocalAgent {
-  //  using LocalAgent::LocalAgent;
+  struct TrPB__LocalAgent : public LocalAgent {
+    using LocalAgent::LocalAgent;
 
-  //  void StartBegin() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ LocalAgent
-  //    , /* function name: */ StartBegin
-  //      ,
-  //    );
-  //  }
+    void StartBegin() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ LocalAgent
+      , /* function name: */ StartBegin
+        ,
+      );
+    }
 
-  //  void StartComplete() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ LocalAgent
-  //    , /* function name: */ StartComplete
-  //      ,
-  //    );
-  //  }
+    void StartComplete() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ LocalAgent
+      , /* function name: */ StartComplete
+        ,
+      );
+    }
 
-  //  void TerminateBegin() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ LocalAgent
-  //    , /* function name: */ TerminateBegin
-  //      ,
-  //    );
-  //  }
+    void TerminateBegin() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ LocalAgent
+      , /* function name: */ TerminateBegin
+        ,
+      );
+    }
 
-  //  void TerminateComplete() override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ void
-  //    , /* parent class:  */ LocalAgent
-  //    , /* function name: */ TerminateComplete
-  //      ,
-  //    );
-  //  }
+    void TerminateComplete() override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ void
+      , /* parent class:  */ LocalAgent
+      , /* function name: */ TerminateComplete
+        ,
+      );
+    }
 
-  //  ghost::StatusWord const& status_word() const override {
-  //    PYBIND11_OVERRIDE(
-  //      /* return type:   */ ghost::StatusWord const&
-  //    , /* parent class:  */ LocalAgent
-  //    , /* function name: */ status_word
-  //      ,
-  //    );
-  //  }
+    ghost::StatusWord const& status_word() const override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ ghost::StatusWord const&
+      , /* parent class:  */ LocalAgent
+      , /* function name: */ status_word
+        ,
+      );
+    }
 
-  //};
+   protected:
+    void AgentThread() override {
+      PYBIND11_OVERRIDE_PURE(
+        /* return type:   */ void
+      , /* parent class:  */ LocalAgent
+      , /* function name: */ AgentThread
+        ,
+      );
+    }
+  };
+
+  struct PuPB__LocalAgent : public LocalAgent {
+    using LocalAgent::AgentThread;
+  };
 
   struct TrPB__LocalChannel : public LocalChannel {
     using LocalChannel::LocalChannel;
@@ -565,16 +579,17 @@ namespace ghost {
       );
     }
 
-//    std::tuple<PyTask *, bool> GetTask(ghost::Gtid arg_0, ghost_sw_info arg_1) override {
-//      PYBIND11_OVERRIDE(
-//        /* return type:   */ std::tuple<PyTask *, bool>
-//      , /* parent class:  */ SingleThreadMallocTaskAllocator<PyTask>
-//      , /* function name: */ GetTask
-//        /* arguments: */
-//        , arg_0
-//        , arg_1
-//      );
-//    }
+    std::tuple<PyTask *, bool> GetTask(ghost::Gtid arg_0, ghost_sw_info arg_1) override {
+      using ret = std::tuple<PyTask *, bool>;
+      PYBIND11_OVERRIDE(
+        /* return type:   */ ret
+      , /* parent class:  */ SingleThreadMallocTaskAllocator<PyTask>
+      , /* function name: */ GetTask
+        /* arguments: */
+        , arg_0
+        , arg_1
+      );
+    }
 
     void FreeTask(PyTask* arg_0) override {
       PYBIND11_OVERRIDE(
@@ -625,16 +640,17 @@ namespace ghost {
       );
     }
 
-    //std::tuple<PyTask *, bool> GetTask(ghost::Gtid arg_0, ghost_sw_info arg_1) override {
-    //  PYBIND11_OVERRIDE_PURE(
-    //    /* return type:   */ std::tuple<PyTask *, bool>
-    //  , /* parent class:  */ TaskAllocator<PyTask>
-    //  , /* function name: */ GetTask
-    //    /* arguments: */
-    //    , arg_0
-    //    , arg_1
-    //  );
-    //}
+    std::tuple<PyTask *, bool> GetTask(ghost::Gtid arg_0, ghost_sw_info arg_1) override {
+      using ret = std::tuple<PyTask *, bool>;
+      PYBIND11_OVERRIDE_PURE(
+        /* return type:   */ ret
+      , /* parent class:  */ TaskAllocator<PyTask>
+      , /* function name: */ GetTask
+        /* arguments: */
+        , arg_0
+        , arg_1
+      );
+    }
 
     void FreeTask(PyTask* arg_0) override {
       PYBIND11_OVERRIDE_PURE(
@@ -681,16 +697,17 @@ namespace ghost {
       );
     }
 
-    //std::tuple<PyTask *, bool> GetTask(ghost::Gtid arg_0, ghost_sw_info arg_1) override {
-    //  PYBIND11_OVERRIDE(
-    //    /* return type:   */ std::tuple<PyTask *, bool>
-    //  , /* parent class:  */ ThreadSafeMallocTaskAllocator<PyTask>
-    //  , /* function name: */ GetTask
-    //    /* arguments: */
-    //    , arg_0
-    //    , arg_1
-    //  );
-    //}
+    std::tuple<PyTask *, bool> GetTask(ghost::Gtid arg_0, ghost_sw_info arg_1) override {
+      using ret = std::tuple<PyTask *, bool>;
+      PYBIND11_OVERRIDE(
+        /* return type:   */ ret
+      , /* parent class:  */ ThreadSafeMallocTaskAllocator<PyTask>
+      , /* function name: */ GetTask
+        /* arguments: */
+        , arg_0
+        , arg_1
+      );
+    }
 
     void FreeTask(PyTask* arg_0) override {
       PYBIND11_OVERRIDE(
@@ -702,6 +719,7 @@ namespace ghost {
       );
     }
 
+    // Note: this duplicate should not exist
     //void ForEachTask(typename TaskAllocator<PyTask>::TaskCallbackFunc arg_0) override {
     //  PYBIND11_OVERRIDE(
     //    /* return type:   */ void
@@ -773,7 +791,7 @@ namespace ghost {
    private:
     void TaskNew(PyTask* task, const Message& msg) {
       using parent = BasicDispatchScheduler<PyTask>;
-      PYBIND11_OVERRIDE(
+      PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ parent
       , /* function name: */ TaskNew
@@ -785,7 +803,7 @@ namespace ghost {
 
     void TaskRunnable(PyTask* task, const Message& msg) {
       using parent = BasicDispatchScheduler<PyTask>;
-      PYBIND11_OVERRIDE(
+      PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ parent
       , /* function name: */ TaskRunnable
@@ -797,7 +815,7 @@ namespace ghost {
 
     void TaskDead(PyTask* task, const Message& msg) {
       using parent = BasicDispatchScheduler<PyTask>;
-      PYBIND11_OVERRIDE(
+      PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ parent
       , /* function name: */ TaskDead
@@ -809,7 +827,7 @@ namespace ghost {
 
     void TaskDeparted(PyTask* task, const Message& msg) {
       using parent = BasicDispatchScheduler<PyTask>;
-      PYBIND11_OVERRIDE(
+      PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ parent
       , /* function name: */ TaskDeparted
@@ -821,7 +839,7 @@ namespace ghost {
 
     void TaskYield(PyTask* task, const Message& msg) {
       using parent = BasicDispatchScheduler<PyTask>;
-      PYBIND11_OVERRIDE(
+      PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ parent
       , /* function name: */ TaskYield
@@ -833,7 +851,7 @@ namespace ghost {
 
     void TaskBlocked(PyTask* task, const Message& msg) {
       using parent = BasicDispatchScheduler<PyTask>;
-      PYBIND11_OVERRIDE(
+      PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ parent
       , /* function name: */ TaskBlocked
@@ -845,7 +863,7 @@ namespace ghost {
 
     void TaskPreempted(PyTask* task, const Message& msg) {
       using parent = BasicDispatchScheduler<PyTask>;
-      PYBIND11_OVERRIDE(
+      PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ parent
       , /* function name: */ TaskPreempted
@@ -886,23 +904,23 @@ namespace ghost {
 PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
   py::module PB__ghost = PB__m.def_submodule("ghost"); {
     using namespace ghost;
-    //py::class_<Agent, TrPB__Agent> PB__Agent(PB__ghost, "Agent"); {
-    //  PB__Agent.def("StartBegin", &Agent::StartBegin);
-    //  PB__Agent.def("StartComplete", &Agent::StartComplete);
-    //  PB__Agent.def("Start", &Agent::Start);
-    //  PB__Agent.def("TerminateBegin", &Agent::TerminateBegin);
-    //  PB__Agent.def("TerminateComplete", &Agent::TerminateComplete);
-    //  PB__Agent.def("Terminate", &Agent::Terminate);
-    //  PB__Agent.def("Finished", &Agent::Finished);
-    //  PB__Agent.def("cpu", &Agent::cpu);
-    //  PB__Agent.def("Ping", &Agent::Ping);
-    //  PB__Agent.def("gtid", &Agent::gtid);
-    //  PB__Agent.def("cpu_avail", &Agent::cpu_avail);
-    //  PB__Agent.def("boosted_priority", &Agent::boosted_priority);
-    //  PB__Agent.def("barrier", &Agent::barrier);
-    //  PB__Agent.def("enclave", &Agent::enclave);
-    //  PB__Agent.def("status_word", &Agent::status_word);
-    //}
+    py::class_<Agent, TrPB__Agent> PB__Agent(PB__ghost, "Agent"); {
+      PB__Agent.def("StartBegin", &Agent::StartBegin);
+      PB__Agent.def("StartComplete", &Agent::StartComplete);
+      PB__Agent.def("Start", &Agent::Start);
+      PB__Agent.def("TerminateBegin", &Agent::TerminateBegin);
+      PB__Agent.def("TerminateComplete", &Agent::TerminateComplete);
+      PB__Agent.def("Terminate", &Agent::Terminate);
+      PB__Agent.def("Finished", &Agent::Finished);
+      PB__Agent.def("cpu", &Agent::cpu);
+      PB__Agent.def("Ping", &Agent::Ping);
+      PB__Agent.def("gtid", &Agent::gtid);
+      PB__Agent.def("cpu_avail", &Agent::cpu_avail);
+      PB__Agent.def("boosted_priority", &Agent::boosted_priority);
+      PB__Agent.def("barrier", &Agent::barrier);
+      PB__Agent.def("enclave", &Agent::enclave);
+      PB__Agent.def("status_word", &Agent::status_word);
+    }
 
     py::class_<AgentConfig> PB__AgentConfig(PB__ghost, "AgentConfig"); {
 //      PB__AgentConfig.def(py::init<ghost::Topology*, ghost::CpuList>());
@@ -1127,24 +1145,25 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__Gtid.def("describe", &Gtid::describe);
     }
 
-    //py::class_<LocalAgent, Agent, TrPB__LocalAgent> PB__LocalAgent(PB__ghost, "LocalAgent"); {
-    //  PB__LocalAgent.def(py::init<ghost::Enclave*, ghost::Cpu const&>());
-    //  PB__LocalAgent.def("StartBegin", &LocalAgent::StartBegin);
-    //  PB__LocalAgent.def("StartComplete", &LocalAgent::StartComplete);
-    //  PB__LocalAgent.def("Start", &LocalAgent::Start);
-    //  PB__LocalAgent.def("TerminateBegin", &LocalAgent::TerminateBegin);
-    //  PB__LocalAgent.def("TerminateComplete", &LocalAgent::TerminateComplete);
-    //  PB__LocalAgent.def("Terminate", &LocalAgent::Terminate);
-    //  PB__LocalAgent.def("Finished", &LocalAgent::Finished);
-    //  PB__LocalAgent.def("cpu", &LocalAgent::cpu);
-    //  PB__LocalAgent.def("Ping", &LocalAgent::Ping);
-    //  PB__LocalAgent.def("gtid", &LocalAgent::gtid);
-    //  PB__LocalAgent.def("cpu_avail", &LocalAgent::cpu_avail);
-    //  PB__LocalAgent.def("boosted_priority", &LocalAgent::boosted_priority);
-    //  PB__LocalAgent.def("barrier", &LocalAgent::barrier);
-    //  PB__LocalAgent.def("enclave", &LocalAgent::enclave);
-    //  PB__LocalAgent.def("status_word", &LocalAgent::status_word);
-    //}
+    py::class_<LocalAgent, Agent, TrPB__LocalAgent> PB__LocalAgent(PB__ghost, "LocalAgent"); {
+      PB__LocalAgent.def(py::init<ghost::Enclave*, ghost::Cpu const&>());
+      PB__LocalAgent.def("StartBegin", &LocalAgent::StartBegin);
+      PB__LocalAgent.def("StartComplete", &LocalAgent::StartComplete);
+      PB__LocalAgent.def("Start", &LocalAgent::Start);
+      PB__LocalAgent.def("TerminateBegin", &LocalAgent::TerminateBegin);
+      PB__LocalAgent.def("TerminateComplete", &LocalAgent::TerminateComplete);
+      PB__LocalAgent.def("Terminate", &LocalAgent::Terminate);
+      PB__LocalAgent.def("Finished", &LocalAgent::Finished);
+      PB__LocalAgent.def("cpu", &LocalAgent::cpu);
+      PB__LocalAgent.def("Ping", &LocalAgent::Ping);
+      PB__LocalAgent.def("gtid", &LocalAgent::gtid);
+      PB__LocalAgent.def("cpu_avail", &LocalAgent::cpu_avail);
+      PB__LocalAgent.def("boosted_priority", &LocalAgent::boosted_priority);
+      PB__LocalAgent.def("barrier", &LocalAgent::barrier);
+      PB__LocalAgent.def("enclave", &LocalAgent::enclave);
+      PB__LocalAgent.def("status_word", &LocalAgent::status_word);
+      PB__LocalAgent.def("AgentThread", &PuPB__LocalAgent::AgentThread);
+    }
 
     py::class_<LocalChannel, Channel, TrPB__LocalChannel> PB__LocalChannel(PB__ghost, "LocalChannel"); {
       PB__LocalChannel.def(py::init<int, int, ghost::CpuList>());
@@ -1243,7 +1262,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
     }
 
     py::class_<PyWrapAgentConfig, AgentConfig> PB__PyWrapAgentConfig(PB__ghost, "PyWrapAgentConfig"); {
-      PB__PyWrapAgentConfig.def(py::init<ghost::PyAgentConfig, MAKEFULLAGENT_T>());
+      PB__PyWrapAgentConfig.def(py::init<ghost::PyAgentConfig, MAKEFULLAGENT_T>(), py::keep_alive<1, 3>());
       //PB__PyWrapAgentConfig.def_readwrite("topology_", &PyWrapAgentConfig::topology_);
       PB__PyWrapAgentConfig.def_readwrite("cpus_", &PyWrapAgentConfig::cpus_);
       PB__PyWrapAgentConfig.def_readwrite("enclave_fd_", &PyWrapAgentConfig::enclave_fd_);
@@ -1468,4 +1487,3 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
   }
 
 }
-
