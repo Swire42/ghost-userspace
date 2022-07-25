@@ -15,10 +15,10 @@ class PyAgent(ghost.LocalAgent):
 class FullPyAgent(ghost.FullAgent_LocalEnclave_PyAgentConfig_):
     def __init__(self, config):
         ghost.FullAgent_LocalEnclave_PyAgentConfig_.__init__(self, config)
-        print("Coucou toi")
+        print("+FullPyAgent")
 
     def __del__(self):
-        print("Boobye")
+        print("~FullPyAgent")
 
 config = ghost.getConfig();
 

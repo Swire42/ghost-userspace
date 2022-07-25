@@ -8,8 +8,8 @@ namespace py = pybind11;
 namespace ghost {
 
 PyWrapAgentConfig::PyWrapAgentConfig(PyAgentConfig confif, MAKEFULLAGENT_T cons) : config(confif), mfa(cons) {}
-  
-FULLAGENT_T* PyWrapAgentConfig::make() {
+
+FULLAGENT_T PyWrapAgentConfig::make() {
   return mfa(config);
 }
 
@@ -17,7 +17,7 @@ WrapFullAgent::WrapFullAgent(PyWrapAgentConfig wconfig) : py_agent(wconfig.make(
 }
 
 void WrapFullAgent::RpcHandler(int64_t req, const AgentRpcArgs& args, AgentRpcResponse& response) {
-  py_agent->RpcHandler(req, args, response);
+  py_agent.attr("RpcHandler")(req, args, response);
 }
 
 template struct Task<LocalStatusWord>;
