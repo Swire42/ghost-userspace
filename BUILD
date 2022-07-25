@@ -415,16 +415,17 @@ py_binary(
 
 cc_binary(
     name = "pyfifo2_bind",
-    srcs = ["schedulers/pyfifo2/fifo_agent.cc", "schedulers/pyfifo2/gen.cc", "schedulers/pyfifo2/fifo_agent.h"],
+    srcs = ["schedulers/pyfifo2/fifo_agent.cc", "schedulers/pyfifo2/fifo_agent.h", "schedulers/pyfifo2/fifo_scheduler.cc", "schedulers/pyfifo2/fifo_scheduler.h", "schedulers/pyfifo2/gen.cc", "bindings/python/interface.cpp", "bindings/python/interface.hpp"],
     copts = compiler_flags + ["-Wall", "-shared", "-fPIC", "-I/usr/include/python3.8 -Iexternal/pybind11"],
     linkshared=True,
     linkstatic=False,
     deps = [
         "@pybind11//:headers",
         ":agent",
-        ":fifo_centralized_scheduler",
         "@com_google_absl//absl/debugging:symbolize",
         "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
     ],
 )
 

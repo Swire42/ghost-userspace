@@ -24,7 +24,7 @@
 #include "lib/channel.h"
 #include "lib/enclave.h"
 #include "lib/topology.h"
-#include "schedulers/fifo/centralized/fifo_scheduler.h"
+#include "schedulers/pyfifo2/fifo_scheduler.h"
 
 #include "fifo_agent.h"
 

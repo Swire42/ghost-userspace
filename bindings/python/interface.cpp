@@ -1,3 +1,5 @@
+#include "interface.hpp"
+
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
@@ -5,11 +7,7 @@ namespace py = pybind11;
 
 namespace ghost {
 
-PyAgentConfig::PyAgentConfig(AgentConfig ag, py::object dat) : data(dat) {
-  *this = ag;
-}
-
-PyWrapAgentConfig::PyWrapAgentConfig(PyAgentConfig conf, MAKEFULLAGENT_T cons) : config(conf), mfa(cons) {}
+PyWrapAgentConfig::PyWrapAgentConfig(PyAgentConfig confif, MAKEFULLAGENT_T cons) : config(confif), mfa(cons) {}
   
 FULLAGENTPTR_T PyWrapAgentConfig::make() {
   return mfa(config);
@@ -21,6 +19,28 @@ WrapFullAgent::WrapFullAgent(PyWrapAgentConfig wconfig) {
 
 void WrapFullAgent::RpcHandler(int64_t req, const AgentRpcArgs& args, AgentRpcResponse& response) {
   py_agent->RpcHandler(req, args, response);
+}
+
+template struct Task<LocalStatusWord>;
+template class TaskAllocator<PyTask>;
+template class SingleThreadMallocTaskAllocator<PyTask>;
+template class ThreadSafeMallocTaskAllocator<PyTask>;
+template class BasicDispatchScheduler<PyTask>;
+template class AgentProcess<WrapFullAgent, PyWrapAgentConfig>;
+template class FullAgent<LocalEnclave, PyAgentConfig>;
+
+CpuList GetTopoCpuList() {
+  return MachineTopology()->all_cores();
+}
+
+PyAgentConfig getConfig() {
+  PyAgentConfig config;
+  Topology* topology = MachineTopology();
+
+  config.topology_ = topology;
+  config.cpus_ = topology->all_cpus();
+
+  return config;
 }
 
 } // namespace ghost
