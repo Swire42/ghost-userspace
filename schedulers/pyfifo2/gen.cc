@@ -462,6 +462,7 @@ namespace ghost {
 
    protected:
     void AgentThread() override {
+      py::gil_scoped_acquire acquire;
       PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
       , /* parent class:  */ LocalAgent
@@ -471,6 +472,7 @@ namespace ghost {
     }
 
     Scheduler* AgentScheduler() const override {
+      py::gil_scoped_acquire acquire;
       PYBIND11_OVERRIDE(
         /* return type:   */ Scheduler*
       , /* parent class:  */ LocalAgent
@@ -1113,7 +1115,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__FullAgent_LocalEnclave_PyAgentConfig_.def("MakeAgent", [](FullAgent<LocalEnclave,PyAgentConfig>* obj, const Cpu& cpu)->Agent* {
         return dynamic_cast<TrPB__FullAgent_LocalEnclave_PyAgentConfig_*>(obj)->MakeAgentHelper(cpu);
             });
-      PB__FullAgent_LocalEnclave_PyAgentConfig_.def("StartAgentTasks", &PuPB__FullAgent_LocalEnclave_PyAgentConfig_::StartAgentTasks);
+      PB__FullAgent_LocalEnclave_PyAgentConfig_.def("StartAgentTasks", &PuPB__FullAgent_LocalEnclave_PyAgentConfig_::StartAgentTasks, py::call_guard<py::gil_scoped_release>());
       PB__FullAgent_LocalEnclave_PyAgentConfig_.def("TerminateAgentTasks", &PuPB__FullAgent_LocalEnclave_PyAgentConfig_::TerminateAgentTasks);
       PB__FullAgent_LocalEnclave_PyAgentConfig_.def_readonly("enclave_", &PuPB__FullAgent_LocalEnclave_PyAgentConfig_::enclave_, py::return_value_policy::reference);
     }
