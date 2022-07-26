@@ -53,4 +53,6 @@ extern template class FullAgent<LocalEnclave, PyAgentConfig>;
 CpuList GetTopoCpuList();
 
 PyAgentConfig getConfig();
+
+CpuList SingleCpu(Cpu const&);
 } // namespace ghost

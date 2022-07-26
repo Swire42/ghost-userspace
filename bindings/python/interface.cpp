@@ -42,4 +42,8 @@ PyAgentConfig getConfig() {
   return config;
 }
 
+CpuList SingleCpu(Cpu const& cpu) {
+  return MachineTopology()->ToCpuList({cpu});
+}
+
 } // namespace ghost

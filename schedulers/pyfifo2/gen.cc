@@ -62,6 +62,18 @@ namespace ghost {
       );
     }
 
+    Scheduler* AgentScheduler() const override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ Scheduler*
+      , /* parent class:  */ Agent
+      , /* function name: */ AgentScheduler
+        ,
+      );
+    }
+  };
+
+  struct PuPB__Agent : public Agent {
+    using Agent::AgentScheduler;
   };
 
   struct TrPB__Channel : public Channel {
@@ -395,6 +407,9 @@ namespace ghost {
   class PuPB__FullAgent_LocalEnclave_PyAgentConfig_ : public FullAgent<LocalEnclave,PyAgentConfig> {
    public:
     using FullAgent<LocalEnclave,PyAgentConfig>::MakeAgent;
+    using FullAgent<LocalEnclave,PyAgentConfig>::StartAgentTasks;
+    using FullAgent<LocalEnclave,PyAgentConfig>::TerminateAgentTasks;
+    using FullAgent<LocalEnclave,PyAgentConfig>::enclave_;
   };
 
   struct TrPB__LocalAgent : public LocalAgent {
@@ -454,10 +469,21 @@ namespace ghost {
         ,
       );
     }
+
+    Scheduler* AgentScheduler() const override {
+      PYBIND11_OVERRIDE(
+        /* return type:   */ Scheduler*
+      , /* parent class:  */ LocalAgent
+      , /* function name: */ AgentScheduler
+        ,
+      );
+    }
   };
 
   struct PuPB__LocalAgent : public LocalAgent {
     using LocalAgent::AgentThread;
+    using LocalAgent::AgentScheduler;
+    using LocalAgent::SignalReady;
   };
 
   struct TrPB__LocalChannel : public LocalChannel {
@@ -564,6 +590,10 @@ namespace ghost {
       );
     }
 
+  };
+
+  struct PuPB__Scheduler : public Scheduler {
+    using Scheduler::cpus;
   };
 
   struct TrPB__SingleThreadMallocTaskAllocator_PyTask_ : public SingleThreadMallocTaskAllocator<PyTask> {
@@ -920,6 +950,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__Agent.def("barrier", &Agent::barrier);
       PB__Agent.def("enclave", &Agent::enclave);
       PB__Agent.def("status_word", &Agent::status_word);
+      PB__Agent.def("AgentScheduler", &PuPB__Agent::AgentScheduler);
     }
 
     py::class_<AgentConfig> PB__AgentConfig(PB__ghost, "AgentConfig"); {
@@ -1062,7 +1093,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__Enclave.def("SetDeliverTicks", &Enclave::SetDeliverTicks);
       PB__Enclave.def("Ready", &Enclave::Ready);
 //      PB__Enclave.def("topology", &Enclave::topology);
-      PB__Enclave.def("cpus", &Enclave::cpus);
+      PB__Enclave.def("cpus", &Enclave::cpus, py::return_value_policy::reference);
       PB__Enclave.def("AttachAgent", &Enclave::AttachAgent);
       PB__Enclave.def("DetachAgent", &Enclave::DetachAgent);
     }
@@ -1082,6 +1113,9 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__FullAgent_LocalEnclave_PyAgentConfig_.def("MakeAgent", [](FullAgent<LocalEnclave,PyAgentConfig>* obj, const Cpu& cpu)->Agent* {
         return dynamic_cast<TrPB__FullAgent_LocalEnclave_PyAgentConfig_*>(obj)->MakeAgentHelper(cpu);
             });
+      PB__FullAgent_LocalEnclave_PyAgentConfig_.def("StartAgentTasks", &PuPB__FullAgent_LocalEnclave_PyAgentConfig_::StartAgentTasks);
+      PB__FullAgent_LocalEnclave_PyAgentConfig_.def("TerminateAgentTasks", &PuPB__FullAgent_LocalEnclave_PyAgentConfig_::TerminateAgentTasks);
+      PB__FullAgent_LocalEnclave_PyAgentConfig_.def_readonly("enclave_", &PuPB__FullAgent_LocalEnclave_PyAgentConfig_::enclave_, py::return_value_policy::reference);
     }
 
     py::class_<Futex> PB__Futex(PB__ghost, "Futex"); {
@@ -1163,6 +1197,8 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalAgent.def("enclave", &LocalAgent::enclave);
       PB__LocalAgent.def("status_word", &LocalAgent::status_word);
       PB__LocalAgent.def("AgentThread", &PuPB__LocalAgent::AgentThread);
+      PB__LocalAgent.def("AgentScheduler", &PuPB__LocalAgent::AgentScheduler);
+      PB__LocalAgent.def("SignalReady", &PuPB__LocalAgent::SignalReady);
     }
 
     py::class_<LocalChannel, Channel, TrPB__LocalChannel> PB__LocalChannel(PB__ghost, "LocalChannel"); {
@@ -1180,7 +1216,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalEnclave.def("ForEachTaskStatusWord", py::overload_cast<std::function<void (ghost_status_word *, uint32_t, uint32_t)>>(&LocalEnclave::ForEachTaskStatusWord));
       PB__LocalEnclave.def("Ready", &LocalEnclave::Ready);
 //      PB__LocalEnclave.def("topology", &LocalEnclave::topology);
-      PB__LocalEnclave.def("cpus", &LocalEnclave::cpus);
+      PB__LocalEnclave.def("cpus", &LocalEnclave::cpus, py::return_value_policy::reference);
       PB__LocalEnclave.def("GetRunRequest", &LocalEnclave::GetRunRequest);
       PB__LocalEnclave.def("CommitRunRequest", &LocalEnclave::CommitRunRequest);
       PB__LocalEnclave.def("SubmitRunRequest", &LocalEnclave::SubmitRunRequest);
@@ -1322,16 +1358,17 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__Scheduler.def("GetDefaultChannel", &Scheduler::GetDefaultChannel);
 //      PB__Scheduler.def("SchedTopology", &Scheduler::SchedTopology);
       PB__Scheduler.def("DumpState", &Scheduler::DumpState);
+      PB__Scheduler.def("cpus", &PuPB__Scheduler::cpus, py::return_value_policy::reference);
     }
 
-    py::class_<TaskAllocator<PyTask>, TrPB__TaskAllocator_PyTask_> PB__TaskAllocator_PyTask_(PB__ghost, "TaskAllocator_PyTask_"); {
+    py::class_<TaskAllocator<PyTask>, TrPB__TaskAllocator_PyTask_, std::shared_ptr<TaskAllocator<PyTask>>> PB__TaskAllocator_PyTask_(PB__ghost, "TaskAllocator_PyTask_"); {
       PB__TaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid>(&TaskAllocator<PyTask>::GetTask));
       PB__TaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid, ghost_sw_info>(&TaskAllocator<PyTask>::GetTask));
       PB__TaskAllocator_PyTask_.def("FreeTask", &TaskAllocator<PyTask>::FreeTask);
       PB__TaskAllocator_PyTask_.def("ForEachTask", &TaskAllocator<PyTask>::ForEachTask);
     }
 
-    py::class_<SingleThreadMallocTaskAllocator<PyTask>, TaskAllocator<PyTask>, TrPB__SingleThreadMallocTaskAllocator_PyTask_> PB__SingleThreadMallocTaskAllocator_PyTask_(PB__ghost, "SingleThreadMallocTaskAllocator_PyTask_"); {
+    py::class_<SingleThreadMallocTaskAllocator<PyTask>, TaskAllocator<PyTask>, TrPB__SingleThreadMallocTaskAllocator_PyTask_, std::shared_ptr<SingleThreadMallocTaskAllocator<PyTask>>> PB__SingleThreadMallocTaskAllocator_PyTask_(PB__ghost, "SingleThreadMallocTaskAllocator_PyTask_"); {
       PB__SingleThreadMallocTaskAllocator_PyTask_.def("ForEachTask", py::overload_cast<ghost::TaskAllocator<PyTask>::TaskCallbackFunc>(&SingleThreadMallocTaskAllocator<PyTask>::ForEachTask));
       PB__SingleThreadMallocTaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid>(&SingleThreadMallocTaskAllocator<PyTask>::GetTask));
       PB__SingleThreadMallocTaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid, ghost_sw_info>(&SingleThreadMallocTaskAllocator<PyTask>::GetTask));
@@ -1376,7 +1413,8 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__Task_LocalStatusWord_.def("Advance", &Task<LocalStatusWord>::Advance);
     }
 
-    py::class_<ThreadSafeMallocTaskAllocator<PyTask>, SingleThreadMallocTaskAllocator<PyTask>, TrPB__ThreadSafeMallocTaskAllocator_PyTask_> PB__ThreadSafeMallocTaskAllocator_PyTask_(PB__ghost, "ThreadSafeMallocTaskAllocator_PyTask_"); {
+    py::class_<ThreadSafeMallocTaskAllocator<PyTask>, SingleThreadMallocTaskAllocator<PyTask>, TrPB__ThreadSafeMallocTaskAllocator_PyTask_, std::shared_ptr<ThreadSafeMallocTaskAllocator<PyTask>>> PB__ThreadSafeMallocTaskAllocator_PyTask_(PB__ghost, "ThreadSafeMallocTaskAllocator_PyTask_"); {
+      PB__ThreadSafeMallocTaskAllocator_PyTask_.def(py::init<>());
       PB__ThreadSafeMallocTaskAllocator_PyTask_.def("ForEachTask", py::overload_cast<ghost::TaskAllocator<PyTask>::TaskCallbackFunc>(&ThreadSafeMallocTaskAllocator<PyTask>::ForEachTask));
       PB__ThreadSafeMallocTaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid>(&ThreadSafeMallocTaskAllocator<PyTask>::GetTask));
       PB__ThreadSafeMallocTaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid, ghost_sw_info>(&ThreadSafeMallocTaskAllocator<PyTask>::GetTask));
@@ -1484,6 +1522,10 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
     PB__ghost.def("SchedAgentEnterGhost", &SchedAgentEnterGhost);
     PB__ghost.def("GetTopoCpuList", &GetTopoCpuList);
     PB__ghost.def("getConfig", &getConfig);
+    PB__ghost.def("SingleCpu", &SingleCpu);
+
+
+    PB__ghost.attr("GHOST_MAX_QUEUE_ELEMS") = py::int_(GHOST_MAX_QUEUE_ELEMS);
   }
 
 }
