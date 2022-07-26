@@ -2,7 +2,7 @@ print("Python is starting.")
 
 from libpyfifo2_bind import *
 
-import gc
+#import gc
 
 print("Importing bindings: OK")
 
@@ -83,13 +83,13 @@ nurse = []
 class FullPyAgent(ghost.FullAgent_LocalEnclave_PyAgentConfig_):
     def __init__(self, config):
         ghost.FullAgent_LocalEnclave_PyAgentConfig_.__init__(self, config)
-        gc.collect()
+        #gc.collect()
         print(self.enclave_)
-        print(gc.is_tracked(self.enclave_))
-        gc.collect()
+        #print(gc.is_tracked(self.enclave_))
+        #gc.collect()
         print(self.enclave_)
         print("+FullPyAgent")
-        print(gc.is_tracked(self.enclave_.cpus()))
+        #print(gc.is_tracked(self.enclave_.cpus()))
         print("+FullPyAgent")
         self.scheduler_ = PyScheduler(self.enclave_, self.enclave_.cpus())
         print("=FullPyAgent")
@@ -113,6 +113,9 @@ wrapconfig = ghost.PyWrapAgentConfig(config, (lambda conf: FullPyAgent(conf)))
 uap = ghost.AgentProcess_WrapFullAgent_PyWrapAgentConfig_(wrapconfig);
 
 print("Running")
+
+while True:
+    print(42)
 
 input()
 

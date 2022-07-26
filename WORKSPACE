@@ -103,7 +103,23 @@ pip_install(
 
 new_local_repository(
     name = "pybind11",
-    path = "/usr/local/lib/python3.8/dist-packages/pybind11/include",
+    path = "/home/toto/Downloads/pypy3.8-v7.3.9-linux64/lib/pypy3.8/site-packages/pybind11/include",
+    build_file_content = """
+package(
+    default_visibility = [
+        "//visibility:public",
+    ],
+)
+
+cc_library(
+    name = "headers",
+    srcs = glob(["**/*.h"]),
+)
+""",
+)
+new_local_repository(
+    name = "pypy38",
+    path = "/home/toto/Downloads/pypy3.8-v7.3.9-linux64/include/pypy3.8",
     build_file_content = """
 package(
     default_visibility = [
