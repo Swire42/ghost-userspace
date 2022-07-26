@@ -1,12 +1,11 @@
 print("Python is starting.")
 
 from libpyfifo2_bind import *
-
-import gc
-
 print("Importing bindings: OK")
 
-#print([[s.id() for s in c.siblings().ToVector()] for c in ghost.GetTopoCpuList().ToVector()])
+print("Topology:", ", ".join((str([s.id() for s in c.siblings().ToVector()]) for c in ghost.GetTopoCpuList().ToVector())))
+
+nurse = []
 
 class CpuState:
     def __init__(self, chan):
@@ -16,7 +15,6 @@ class CpuState:
 
 class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
     def __init__(self, enclave, cpulist):
-        print(1)
         self.allocator_ = ghost.ThreadSafeMallocTaskAllocator_PyTask_()
         ghost.BasicDispatchScheduler_PyTask_.__init__(self, enclave, cpulist, self.allocator_)
         self.cpu_states = []
@@ -32,7 +30,7 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
         return self.default_channel_
 
     def TaskNew(self, task, msg):
-        print("NEW")
+        pass
 
     def TaskRunnable(self, task, msg):
         pass
@@ -68,40 +66,23 @@ class PyAgent(ghost.LocalAgent):
     def __init__(self, enclave, cpu, scheduler):
         ghost.LocalAgent.__init__(self, enclave, cpu)
         self.scheduler_ = scheduler
-        print("+PyAgent")
 
     def AgentThread(self):
-        print("YO", self.cpu().id())
+        print("AgentThread", self.cpu().id())
         self.SignalReady()
         import time; time.sleep(5)
 
     def AgentScheduler(self):
         return self.scheduler_
 
-nurse = []
-
 class FullPyAgent(ghost.FullAgent_LocalEnclave_PyAgentConfig_):
     def __init__(self, config):
         ghost.FullAgent_LocalEnclave_PyAgentConfig_.__init__(self, config)
-        gc.collect()
-        print(self.enclave_)
-        print(gc.is_tracked(self.enclave_))
-        gc.collect()
-        print(self.enclave_)
-        print("+FullPyAgent")
-        print(gc.is_tracked(self.enclave_.cpus()))
-        print("+FullPyAgent")
         self.scheduler_ = PyScheduler(self.enclave_, self.enclave_.cpus())
-        print("=FullPyAgent")
         self.StartAgentTasks()
-        print("=FullPyAgent")
-
-    def __del__(self):
-        print("~FullPyAgent")
 
     def MakeAgent(self, cpu):
         global nurse
-        print("make")
         ret = PyAgent(self.enclave_, cpu, self.scheduler_)
         nurse.append(ret)
         return ret
