@@ -107,6 +107,18 @@ namespace ghost {
       );
     }
 
+    //bool AssociateTask(ghost::Gtid arg_0, int arg_1, int* arg_2) const override {
+    //  PYBIND11_OVERRIDE_PURE(
+    //    /* return type:   */ bool
+    //  , /* parent class:  */ Channel
+    //  , /* function name: */ AssociateTask
+    //    /* arguments: */
+    //    , arg_0
+    //    , arg_1
+    //    , arg_2
+    //  );
+    //}
+
     bool SetEnclaveDefault() const override {
       PYBIND11_OVERRIDE_PURE(
         /* return type:   */ bool
@@ -381,6 +393,7 @@ namespace ghost {
 
     Agent* MakeAgentHelper(const Cpu& cpu) {
       using parent = FullAgent<LocalEnclave,PyAgentConfig>;
+      py::gil_scoped_acquire acquire;
       PYBIND11_OVERLOAD_INT(
         /* return type:   */ Agent*
       , /* parent class:  */ parent
@@ -507,6 +520,18 @@ namespace ghost {
         ,
       );
     }
+
+    //bool AssociateTask(ghost::Gtid arg_0, int arg_1, int* arg_2) const override {
+    //  PYBIND11_OVERRIDE(
+    //    /* return type:   */ bool
+    //  , /* parent class:  */ LocalChannel
+    //  , /* function name: */ AssociateTask
+    //    /* arguments: */
+    //    , arg_0
+    //    , arg_1
+    //    , arg_2
+    //  );
+    //}
 
     bool SetEnclaveDefault() const override {
       PYBIND11_OVERRIDE(
@@ -797,8 +822,8 @@ namespace ghost {
       );
     }
 
-   private:
     void TaskNew(PyTask* task, const Message& msg) {
+      py::gil_scoped_acquire acquire;
       using parent = BasicDispatchScheduler<PyTask>;
       PYBIND11_OVERRIDE_PURE(
         /* return type:   */ void
@@ -808,6 +833,7 @@ namespace ghost {
         , task
         , msg
       );
+      while(true);
     }
 
     void TaskRunnable(PyTask* task, const Message& msg) {
@@ -894,6 +920,7 @@ namespace ghost {
     using BasicDispatchScheduler<PyTask>::TaskPreempted;
     using BasicDispatchScheduler<PyTask>::enclave;
     using BasicDispatchScheduler<PyTask>::cpus;
+    using BasicDispatchScheduler<PyTask>::allocator;
   };
 
   struct TrPB__LocalStatusWord : public LocalStatusWord {
@@ -945,7 +972,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
     }
 
     py::class_<AgentProcess<WrapFullAgent,PyWrapAgentConfig>> PB__AgentProcess_WrapFullAgent_PyWrapAgentConfig_(PB__ghost, "AgentProcess_WrapFullAgent_PyWrapAgentConfig_"); {
-      PB__AgentProcess_WrapFullAgent_PyWrapAgentConfig_.def(py::init<PyWrapAgentConfig>());
+      PB__AgentProcess_WrapFullAgent_PyWrapAgentConfig_.def(py::init<PyWrapAgentConfig>(), py::call_guard<py::gil_scoped_release>());
       PB__AgentProcess_WrapFullAgent_PyWrapAgentConfig_.def("Rpc", &AgentProcess<WrapFullAgent,PyWrapAgentConfig>::Rpc);
       PB__AgentProcess_WrapFullAgent_PyWrapAgentConfig_.def("RpcWithResponse", &AgentProcess<WrapFullAgent,PyWrapAgentConfig>::RpcWithResponse);
       PB__AgentProcess_WrapFullAgent_PyWrapAgentConfig_.def("AddExitHandler", &AgentProcess<WrapFullAgent,PyWrapAgentConfig>::AddExitHandler);
@@ -1176,7 +1203,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalAgent.def("boosted_priority", &LocalAgent::boosted_priority);
       PB__LocalAgent.def("barrier", &LocalAgent::barrier);
       PB__LocalAgent.def("enclave", &LocalAgent::enclave);
-      PB__LocalAgent.def("status_word", &LocalAgent::status_word);
+      PB__LocalAgent.def("status_word", &LocalAgent::status_word, py::return_value_policy::reference);
       PB__LocalAgent.def("AgentThread", &PuPB__LocalAgent::AgentThread);
       PB__LocalAgent.def("AgentScheduler", &PuPB__LocalAgent::AgentScheduler);
       PB__LocalAgent.def("SignalReady", &PuPB__LocalAgent::SignalReady);
@@ -1188,9 +1215,8 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalChannel.def("Peek", &LocalChannel::Peek);
       PB__LocalChannel.def("Consume", &LocalChannel::Consume);
       PB__LocalChannel.def("max_elements", &LocalChannel::max_elements);
-      PB__LocalChannel.def("AssociateTask", [](LocalChannel* obj, ghost::Gtid arg_0, int arg_1)->bool {
-        return dynamic_cast<TrPB__LocalChannel*>(obj)->AssociateTask(arg_0, arg_1, nullptr);
-      });
+      //PB__LocalChannel.def("AssociateTask", &LocalChannel::AssociateTask);
+      PB__LocalChannel.def("AssociateTask2", [](LocalChannel* obj, ghost::Gtid gtid, int barrier)->bool { return obj->AssociateTask(gtid, barrier, nullptr);} );
       PB__LocalChannel.def("SetEnclaveDefault", &LocalChannel::SetEnclaveDefault);
       PB__LocalChannel.def("GetFd", &LocalChannel::GetFd);
     }
@@ -1461,6 +1487,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__BasicDispatchScheduler_PyTask_.def("TaskPreempted", &PuPB__BasicDispatchScheduler_PyTask_::TaskPreempted);
       PB__BasicDispatchScheduler_PyTask_.def("enclave", &PuPB__BasicDispatchScheduler_PyTask_::enclave, py::return_value_policy::reference);
       PB__BasicDispatchScheduler_PyTask_.def("cpus", &PuPB__BasicDispatchScheduler_PyTask_::cpus, py::return_value_policy::reference);
+      PB__BasicDispatchScheduler_PyTask_.def("allocator", &PuPB__BasicDispatchScheduler_PyTask_::allocator, py::return_value_policy::reference);
     }
 
     py::class_<LocalStatusWord, StatusWord, TrPB__LocalStatusWord> PB__LocalStatusWord(PB__ghost, "LocalStatusWord"); {
@@ -1521,6 +1548,8 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
 
 
     PB__ghost.attr("GHOST_MAX_QUEUE_ELEMS") = py::int_(GHOST_MAX_QUEUE_ELEMS);
+    PB__ghost.attr("COMMIT_AT_TXN_COMMIT") = py::int_(COMMIT_AT_TXN_COMMIT);
+    PB__ghost.attr("RTLA_ON_IDLE") = py::int_(RTLA_ON_IDLE);
 
     py::class_<ghost_msg_payload_task_new>(PB__ghost, "ghost_msg_payload_task_new")
       .def_readwrite("gtid", &ghost_msg_payload_task_new::gtid)

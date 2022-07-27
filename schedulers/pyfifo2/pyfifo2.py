@@ -22,6 +22,8 @@ class TaskData:
         self.cpu = -1
         self.preempted = False
         self.prio_boost = False
+    def __del__(self):
+        print("DEL!")
 
 def attach_data(task):
     if type(task.pydata) is not TaskData:
@@ -29,6 +31,7 @@ def attach_data(task):
 
 class CpuState:
     def __init__(self, chan):
+        self.current = None
         self.channel = chan
         self.task = None
         self.run_queue = queue.deque()
@@ -41,8 +44,10 @@ class CpuState:
             self.run_queue.append(task)
 
     def dequeue(self):
+        if self.empty(): return None
+        task = self.run_queue.popleft()
         task.pydata.run_state = kRunnable
-        return self.run_queue.popleft()
+        return task
 
     def erase(self, task):
         self.run_queue.remove(task)
@@ -66,8 +71,8 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
             if self.default_channel_ is None: self.default_channel_ = self.cpu_states[cpu.id()].channel
         self.cpu_k = -1 # for AssignCpu
 
-    def cpu_state_of(task):
-        return cpu_states[task.pydata.cpu]
+    def cpu_state_of(self, task):
+        return self.cpu_states[task.pydata.cpu]
 
     def Schedule(self):
         pass
@@ -76,7 +81,7 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
         for cpu in self.cpus().ToVector():
             cs = self.cpu_states[cpu.id()]
             agent = self.enclave().GetAgent(cpu)
-            while not cs.channel.AssociateTask(agent.gtid(), agent.barrier()):
+            while not cs.channel.AssociateTask2(agent.gtid(), agent.barrier()):
                 continue # should check error against ESTALE which is the only okay value
 
     def Empty(self):
@@ -90,86 +95,93 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
 
     def Migrate(self, task, cpu, seqnum):
         cs = self.cpu_states[cpu.id()]
-        assert cs.channel.AssociateTask(task.gtid, seqnum)
+        assert cs.channel.AssociateTask2(task.gtid, seqnum)
         task.pydata.cpu = cpu.id()
         cs.enqueue(task)
-        enclave().GetAgent(cpu).Ping()
+        self.enclave().GetAgent(cpu).Ping()
 
     def GetDefaultChannel(self):
         return self.default_channel_
 
     def TaskNew(self, task, msg):
+        print("new")
         attach_data(task)
-        payload = cast_payload_new(msg.payload())
+        payload = ghost.cast_payload_new(msg.payload())
         task.seqnum = msg.seqnum()
         if payload.runnable:
             task.pydata.run_state = kRunnable
-            self.Migrate(task, AssignCpu(task), msg.seqnum())
+            self.Migrate(task, self.AssignCpu(task), msg.seqnum())
         else:
             task.pydata.run_state = kBlocked
 
     def TaskRunnable(self, task, msg):
-        payload = cast_payload_wakeup(msg.payload())
+        print("runnable")
+        payload = ghost.cast_payload_wakeup(msg.payload())
         task.pydata.run_state = kRunnable
         task.pydata.prio_boost = not payload.deferrable
         if task.pydata.cpu < 0:
-            self.Migrate(task, AssignCpu(task), msg.seqnum())
+            self.Migrate(task, self.AssignCpu(task), msg.seqnum())
         else:
-            cpu_state_of(task).pydata.enqueue(task)
+            self.cpu_state_of(task).pydata.enqueue(task)
 
     def TaskDeparted(self, task, msg):
-        payload = cast_payload_departed(msg.payload())
+        print("departed")
+        payload = ghost.cast_payload_departed(msg.payload())
         if task.pydata.run_state == kOnCpu or payload.from_switchto:
             self.TaskOffCpu(task, False, payload.from_switchto)
         elif task.pydata.run_state == kRunnable:
-            cpu_state_of(task).erase(task)
+            self.cpu_state_of(task).erase(task)
 
         if payload.from_switchto:
-            enclave.GetAgent(ghost.GetCpu(payload.cpu)).Ping()
+            self.enclave().GetAgent(ghost.GetCpu(payload.cpu)).Ping()
 
-        allocator().FreeTask(task)
+        self.allocator().FreeTask(task)
 
     def TaskDead(self, task, msg):
-        payload = cast_payload_dead(msg.payload())
-        allocator().FreeTask(task)
+        print("dead")
+        payload = ghost.cast_payload_dead(msg.payload())
+        self.allocator().FreeTask(task)
 
     def TaskYield(self, task, msg):
-        payload = cast_payload_yield(msg.payload())
+        print("yield")
+        payload = ghost.cast_payload_yield(msg.payload())
         self.TaskOffCpu(task, False, payload.from_switchto)
-        cpu_state_of(task).run_queue.enqueue(task)
+        self.cpu_state_of(task).enqueue(task)
         if payload.from_switchto:
-            enclave.GetAgent(ghost.GetCpu(payload.cpu)).Ping()
+            self.enclave().GetAgent(ghost.GetCpu(payload.cpu)).Ping()
 
     def TaskBlocked(self, task, msg):
-        payload = cast_payload_blocked(msg.payload())
+        print("blocked")
+        payload = ghost.cast_payload_blocked(msg.payload())
         self.TaskOffCpu(task, False, payload.from_switchto)
         if payload.from_switchto:
-            enclave.GetAgent(ghost.GetCpu(payload.cpu)).Ping()
+            self.enclave().GetAgent(ghost.GetCpu(payload.cpu)).Ping()
 
     def TaskPreempted(self, task, msg):
-        payload = cast_payload_preempt(msg.payload())
+        print("preempt")
+        payload = ghost.cast_payload_preempt(msg.payload())
         self.TaskOffCpu(task, False, payload.from_switchto)
         task.pydata.preempted = True
         task.pydata.prio_boost = True
-        cpu_state_of(task).run_queue.enqueue(task)
+        self.cpu_state_of(task).enqueue(task)
         if payload.from_switchto:
-            enclave.GetAgent(ghost.GetCpu(payload.cpu)).Ping()
+            self.enclave().GetAgent(ghost.GetCpu(payload.cpu)).Ping()
 
     def TaskSwitchTo(self, task, msg):
         self.TaskOffCpu(task, True, False)
 
     def ValidatePreExitState(self):
         for cpu in self.cpus().ToVector():
-            assert cpu_states[cpu.id()].run_queue.empty()
+            assert self.cpu_states[cpu.id()].empty()
 
     def TaskOffCpu(self, task, blocked, from_switchto):
-        cs = cpu_state_of(task)
-        if task.oncpu():
+        cs = self.cpu_state_of(task)
+        if task.pydata.run_state == kOnCpu:
             cs.current = None
         task.pydata.run_state = kBlocked if blocked else kRunnable
 
     def TaskOnCpu(self, task, cpu):
-        cs = cpu_states[cpu.id()]
+        cs = self.cpu_states[cpu.id()]
         cs.current = task
         task.pydata.run_state = kOnCpu
         task.pydata.cpu = cpu.id()
@@ -177,12 +189,12 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
         task.pydata.prio_boost = False
 
     def PySchedule(self, cpu, agent_barrier, prio_boost):
-        cs = cpu_states[cpu.id()]
+        cs = self.cpu_states[cpu.id()]
         next_task = None
         if not prio_boost:
             next_task = cs.current
-            if next_task is None: next_task = cs.run_queue.dequeue()
-        req = enclave().GetRunRequest()
+            if next_task is None: next_task = cs.dequeue()
+        req = self.enclave().GetRunRequest(cpu)
 
         if next_task is not None:
             while next_task.status_word.on_cpu():
@@ -191,7 +203,7 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
             opts.target = next_task.gtid
             opts.target_barrier = next_task.seqnum
             opts.agent_barrier = agent_barrier
-            opts.commit_flags = COMMIT_AT_TXN_COMMIT
+            opts.commit_flags = ghost.COMMIT_AT_TXN_COMMIT
             req.Open(opts)
             if req.Commit():
                 self.TaskOnCpu(next_task, cpu)
@@ -199,22 +211,29 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
                 if next_task == cs.current:
                     self.TaskOffCpu(next_task, False, False)
                 next_task.pydata.prio_boost = True
-                cs.run_queue.enqueue(next_task)
+                cs.enqueue(next_task)
         else:
             flags = 0
-            if prio_boost and (cs.current is not None or not cs.run_queue.empty()):
-                flags = RTLA_ON_IDLE
+            if prio_boost and (cs.current is not None or not cs.empty()):
+                flags = ghost.RTLA_ON_IDLE
             req.LocalYield(agent_barrier, flags)
 
     def Schedule(self, cpu, agent_sw):
+        print("schedule")
         agent_barrier = agent_sw.barrier()
-        cs = cpu_states[cpu.id()]
+        cs = self.cpu_states[cpu.id()]
+        print(cpu.id(), "peek")
         msg = ghost.Peek(cs.channel)
+        print(cpu.id(), "peeked")
         while not msg.empty():
+            print(cpu.id(), "msg", msg.describe_type())
+            #import time; time.sleep(1)
             self.DispatchMessage(msg)
             ghost.Consume(cs.channel, msg)
+            print(cpu.id(), "consummed")
+            msg = ghost.Peek(cs.channel)
 
-        PySchedule(cpu, agent_barrier, agent_sw.boosted_priority())
+        self.PySchedule(cpu, agent_barrier, agent_sw.boosted_priority())
 
 
 class PyAgent(ghost.LocalAgent):
@@ -226,9 +245,12 @@ class PyAgent(ghost.LocalAgent):
         print("AgentThread", self.cpu().id())
         self.gtid().assign_name("Agent:"+str(self.cpu().id()))
         self.SignalReady()
+        print("signal ready")
         self.WaitForEnclaveReady()
-        while not Finished or not scheduler_.Empty(cpu()):
-            scheduler_.Schedule(cpu(), status_word())
+        print("enclave ready")
+        while not self.Finished() or not scheduler_.Empty(cpu()):
+            self.scheduler_.Schedule(self.cpu(), self.status_word())
+        print("Thread exit")
 
     def AgentScheduler(self):
         return self.scheduler_
@@ -237,10 +259,14 @@ class FullPyAgent(ghost.FullAgent_LocalEnclave_PyAgentConfig_):
     def __init__(self, config):
         ghost.FullAgent_LocalEnclave_PyAgentConfig_.__init__(self, config)
         self.scheduler_ = PyScheduler(self.enclave_, self.enclave_.cpus())
+        print("=======1")
         self.StartAgentTasks()
+        print("=======2")
         self.enclave_.Ready()
+        print("=======3")
 
     def __del__(self):
+        print("oskour")
         self.scheduler_.ValidatePreExitState()
         self.TerminateAgentTasks()
 

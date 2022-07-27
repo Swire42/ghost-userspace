@@ -10,6 +10,7 @@ namespace ghost {
 PyWrapAgentConfig::PyWrapAgentConfig(PyAgentConfig confif, MAKEFULLAGENT_T cons) : config(confif), mfa(cons) {}
 
 FULLAGENT_T PyWrapAgentConfig::make() {
+  py::gil_scoped_acquire acquire;
   return mfa(config);
 }
 

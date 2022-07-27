@@ -10,7 +10,7 @@ namespace ghost {
 
 struct PyTask : public Task<LocalStatusWord> {
   PyTask(Gtid fifo_task_gtid, ghost_sw_info sw_info)
-    : Task<>(fifo_task_gtid, sw_info) {}
+    : Task<>(fifo_task_gtid, sw_info), pydata(pybind11::none()) {}
   ~PyTask() override {}
 
   py::object pydata;
