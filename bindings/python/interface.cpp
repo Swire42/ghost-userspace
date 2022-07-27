@@ -46,4 +46,36 @@ CpuList SingleCpu(Cpu const& cpu) {
   return MachineTopology()->ToCpuList({cpu});
 }
 
+Cpu GetCpu(int cpu) {
+  return MachineTopology()->cpu(cpu);
+}
+
+const ghost_msg_payload_task_new* cast_payload_new(void* payload) {
+  return static_cast<const ghost_msg_payload_task_new*>(payload);
+}
+
+const ghost_msg_payload_task_wakeup* cast_payload_wakeup(void* payload) {
+  return static_cast<const ghost_msg_payload_task_wakeup*>(payload);
+}
+
+const ghost_msg_payload_task_departed* cast_payload_departed(void* payload) {
+  return static_cast<const ghost_msg_payload_task_departed*>(payload);
+}
+
+const ghost_msg_payload_task_dead* cast_payload_dead(void* payload) {
+  return static_cast<const ghost_msg_payload_task_dead*>(payload);
+}
+
+const ghost_msg_payload_task_yield* cast_payload_yield(void* payload) {
+  return static_cast<const ghost_msg_payload_task_yield*>(payload);
+}
+
+const ghost_msg_payload_task_blocked* cast_payload_blocked(void* payload) {
+  return static_cast<const ghost_msg_payload_task_blocked*>(payload);
+}
+
+const ghost_msg_payload_task_preempt* cast_payload_preempt(void* payload) {
+  return static_cast<const ghost_msg_payload_task_preempt*>(payload);
+}
+
 } // namespace ghost

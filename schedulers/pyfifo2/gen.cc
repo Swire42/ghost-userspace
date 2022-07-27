@@ -107,18 +107,6 @@ namespace ghost {
       );
     }
 
-    bool AssociateTask(ghost::Gtid arg_0, int arg_1, int* arg_2) const override {
-      PYBIND11_OVERRIDE_PURE(
-        /* return type:   */ bool
-      , /* parent class:  */ Channel
-      , /* function name: */ AssociateTask
-        /* arguments: */
-        , arg_0
-        , arg_1
-        , arg_2
-      );
-    }
-
     bool SetEnclaveDefault() const override {
       PYBIND11_OVERRIDE_PURE(
         /* return type:   */ bool
@@ -486,6 +474,7 @@ namespace ghost {
     using LocalAgent::AgentThread;
     using LocalAgent::AgentScheduler;
     using LocalAgent::SignalReady;
+    using LocalAgent::WaitForEnclaveReady;
   };
 
   struct TrPB__LocalChannel : public LocalChannel {
@@ -516,18 +505,6 @@ namespace ghost {
       , /* parent class:  */ LocalChannel
       , /* function name: */ max_elements
         ,
-      );
-    }
-
-    bool AssociateTask(ghost::Gtid arg_0, int arg_1, int* arg_2) const override {
-      PYBIND11_OVERRIDE(
-        /* return type:   */ bool
-      , /* parent class:  */ LocalChannel
-      , /* function name: */ AssociateTask
-        /* arguments: */
-        , arg_0
-        , arg_1
-        , arg_2
       );
     }
 
@@ -915,6 +892,8 @@ namespace ghost {
     using BasicDispatchScheduler<PyTask>::TaskYield;
     using BasicDispatchScheduler<PyTask>::TaskBlocked;
     using BasicDispatchScheduler<PyTask>::TaskPreempted;
+    using BasicDispatchScheduler<PyTask>::enclave;
+    using BasicDispatchScheduler<PyTask>::cpus;
   };
 
   struct TrPB__LocalStatusWord : public LocalStatusWord {
@@ -1072,7 +1051,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
 
     py::class_<Enclave, TrPB__Enclave> PB__Enclave(PB__ghost, "Enclave"); {
       PB__Enclave.def(py::init<ghost::AgentConfig const>());
-      PB__Enclave.def("GetRunRequest", &Enclave::GetRunRequest);
+      PB__Enclave.def("GetRunRequest", &Enclave::GetRunRequest, py::return_value_policy::reference);
       PB__Enclave.def("CommitRunRequest", &Enclave::CommitRunRequest);
       PB__Enclave.def("SubmitRunRequest", &Enclave::SubmitRunRequest);
       PB__Enclave.def("CompleteRunRequest", &Enclave::CompleteRunRequest);
@@ -1082,7 +1061,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__Enclave.def("SubmitRunRequests", &Enclave::SubmitRunRequests);
       PB__Enclave.def("CommitSyncRequests", &Enclave::CommitSyncRequests);
       PB__Enclave.def("SubmitSyncRequests", &Enclave::SubmitSyncRequests);
-      PB__Enclave.def("GetAgent", &Enclave::GetAgent);
+      PB__Enclave.def("GetAgent", &Enclave::GetAgent, py::return_value_policy::reference);
       PB__Enclave.def("ForEachTaskStatusWord", &Enclave::ForEachTaskStatusWord);
       PB__Enclave.def("AdvertiseOnline", &Enclave::AdvertiseOnline);
       PB__Enclave.def("PrepareToExit", &Enclave::PrepareToExit);
@@ -1201,6 +1180,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalAgent.def("AgentThread", &PuPB__LocalAgent::AgentThread);
       PB__LocalAgent.def("AgentScheduler", &PuPB__LocalAgent::AgentScheduler);
       PB__LocalAgent.def("SignalReady", &PuPB__LocalAgent::SignalReady);
+      PB__LocalAgent.def("WaitForEnclaveReady", &PuPB__LocalAgent::WaitForEnclaveReady, py::call_guard<py::gil_scoped_release>());
     }
 
     py::class_<LocalChannel, Channel, TrPB__LocalChannel> PB__LocalChannel(PB__ghost, "LocalChannel"); {
@@ -1208,7 +1188,9 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalChannel.def("Peek", &LocalChannel::Peek);
       PB__LocalChannel.def("Consume", &LocalChannel::Consume);
       PB__LocalChannel.def("max_elements", &LocalChannel::max_elements);
-      PB__LocalChannel.def("AssociateTask", &LocalChannel::AssociateTask);
+      PB__LocalChannel.def("AssociateTask", [](LocalChannel* obj, ghost::Gtid arg_0, int arg_1)->bool {
+        return dynamic_cast<TrPB__LocalChannel*>(obj)->AssociateTask(arg_0, arg_1, nullptr);
+      });
       PB__LocalChannel.def("SetEnclaveDefault", &LocalChannel::SetEnclaveDefault);
       PB__LocalChannel.def("GetFd", &LocalChannel::GetFd);
     }
@@ -1219,7 +1201,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalEnclave.def("Ready", &LocalEnclave::Ready);
 //      PB__LocalEnclave.def("topology", &LocalEnclave::topology);
       PB__LocalEnclave.def("cpus", &LocalEnclave::cpus, py::return_value_policy::reference);
-      PB__LocalEnclave.def("GetRunRequest", &LocalEnclave::GetRunRequest);
+      PB__LocalEnclave.def("GetRunRequest", &LocalEnclave::GetRunRequest, py::return_value_policy::reference);
       PB__LocalEnclave.def("CommitRunRequest", &LocalEnclave::CommitRunRequest);
       PB__LocalEnclave.def("SubmitRunRequest", &LocalEnclave::SubmitRunRequest);
       PB__LocalEnclave.def("CompleteRunRequest", &LocalEnclave::CompleteRunRequest);
@@ -1229,7 +1211,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__LocalEnclave.def("SubmitRunRequests", &LocalEnclave::SubmitRunRequests);
       PB__LocalEnclave.def("CommitSyncRequests", &LocalEnclave::CommitSyncRequests);
       PB__LocalEnclave.def("SubmitSyncRequests", &LocalEnclave::SubmitSyncRequests);
-      PB__LocalEnclave.def("GetAgent", &LocalEnclave::GetAgent);
+      PB__LocalEnclave.def("GetAgent", &LocalEnclave::GetAgent, py::return_value_policy::reference);
       PB__LocalEnclave.def("AttachAgent", &LocalEnclave::AttachAgent);
       PB__LocalEnclave.def("DetachAgent", &LocalEnclave::DetachAgent);
       PB__LocalEnclave.def("GetNrTasks", py::overload_cast<>(&LocalEnclave::GetNrTasks));
@@ -1294,9 +1276,16 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__PyAgentConfig.def_readwrite("tick_config_", &PyAgentConfig::tick_config_);
       PB__PyAgentConfig.def_readwrite("stderr_fd_", &PyAgentConfig::stderr_fd_);
       PB__PyAgentConfig.def_readwrite("mlockall_", &PyAgentConfig::mlockall_);
+      PB__PyAgentConfig.def_readwrite("pydata", &PyAgentConfig::pydata);
     }
 
     py::class_<PyTask> PB__PyTask(PB__ghost, "PyTask"); {
+      PB__PyTask.def(py::init<ghost::Gtid, ghost_sw_info>());
+      PB__PyTask.def_readwrite("gtid", &PyTask::gtid);
+      PB__PyTask.def_readonly("status_word", &PyTask::status_word);
+      PB__PyTask.def_readwrite("seqnum", &PyTask::seqnum);
+      PB__PyTask.def("Advance", &PyTask::Advance);
+      PB__PyTask.def_readwrite("pydata", &PyTask::pydata);
     }
 
     py::class_<PyWrapAgentConfig, AgentConfig> PB__PyWrapAgentConfig(PB__ghost, "PyWrapAgentConfig"); {
@@ -1316,7 +1305,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__RunRequest.def("Open", &RunRequest::Open);
       PB__RunRequest.def("OpenUnschedule", &RunRequest::OpenUnschedule);
       PB__RunRequest.def("Abort", &RunRequest::Abort);
-      PB__RunRequest.def("LocalYield", &RunRequest::LocalYield);
+      PB__RunRequest.def("LocalYield", &RunRequest::LocalYield, py::call_guard<py::gil_scoped_release>());
       PB__RunRequest.def("Ping", &RunRequest::Ping);
       PB__RunRequest.def("Commit", &RunRequest::Commit);
       PB__RunRequest.def("Submit", &RunRequest::Submit);
@@ -1342,6 +1331,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
     }
 
     py::class_<RunRequestOptions> PB__RunRequestOptions(PB__ghost, "RunRequestOptions"); {
+      PB__RunRequestOptions.def(py::init<>());
       PB__RunRequestOptions.def_readwrite("target", &RunRequestOptions::target);
       PB__RunRequestOptions.def_readwrite("target_barrier", &RunRequestOptions::target_barrier);
       PB__RunRequestOptions.def_readwrite("agent_barrier", &RunRequestOptions::agent_barrier);
@@ -1469,6 +1459,8 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__BasicDispatchScheduler_PyTask_.def("TaskYield", &PuPB__BasicDispatchScheduler_PyTask_::TaskYield);
       PB__BasicDispatchScheduler_PyTask_.def("TaskBlocked", &PuPB__BasicDispatchScheduler_PyTask_::TaskBlocked);
       PB__BasicDispatchScheduler_PyTask_.def("TaskPreempted", &PuPB__BasicDispatchScheduler_PyTask_::TaskPreempted);
+      PB__BasicDispatchScheduler_PyTask_.def("enclave", &PuPB__BasicDispatchScheduler_PyTask_::enclave, py::return_value_policy::reference);
+      PB__BasicDispatchScheduler_PyTask_.def("cpus", &PuPB__BasicDispatchScheduler_PyTask_::cpus, py::return_value_policy::reference);
     }
 
     py::class_<LocalStatusWord, StatusWord, TrPB__LocalStatusWord> PB__LocalStatusWord(PB__ghost, "LocalStatusWord"); {
@@ -1515,7 +1507,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
     PB__ghost.def("MonotonicNow", &MonotonicNow);
     PB__ghost.def("GetTID", &GetTID);
     PB__ghost.def("GetGtid", &GetGtid);
-    PB__ghost.def("Pause", &Pause);
+    PB__ghost.def("Pause", &Pause, py::call_guard<py::gil_scoped_release>());
     PB__ghost.def("Peek", &Peek);
     PB__ghost.def("Consume", &Consume);
     PB__ghost.def("verbose", &verbose);
@@ -1525,9 +1517,64 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
     PB__ghost.def("GetTopoCpuList", &GetTopoCpuList);
     PB__ghost.def("getConfig", &getConfig);
     PB__ghost.def("SingleCpu", &SingleCpu);
+    PB__ghost.def("GetCpu", &GetCpu);
 
 
     PB__ghost.attr("GHOST_MAX_QUEUE_ELEMS") = py::int_(GHOST_MAX_QUEUE_ELEMS);
+
+    py::class_<ghost_msg_payload_task_new>(PB__ghost, "ghost_msg_payload_task_new")
+      .def_readwrite("gtid", &ghost_msg_payload_task_new::gtid)
+      .def_readwrite("runtime", &ghost_msg_payload_task_new::runtime)
+      .def_readwrite("runnable", &ghost_msg_payload_task_new::runnable);
+    PB__ghost.def("cast_payload_new", &cast_payload_new, py::return_value_policy::reference);
+
+    py::class_<ghost_msg_payload_task_preempt>(PB__ghost, "ghost_msg_payload_task_preempt")
+      .def_readwrite("gtid", &ghost_msg_payload_task_preempt::gtid)
+      .def_readwrite("runtime", &ghost_msg_payload_task_preempt::runtime)
+      .def_readwrite("cpu_seqnum", &ghost_msg_payload_task_preempt::cpu_seqnum)
+      .def_readwrite("agent_data", &ghost_msg_payload_task_preempt::agent_data)
+      .def_readwrite("cpu", &ghost_msg_payload_task_preempt::cpu)
+      .def_readwrite("from_switchto", &ghost_msg_payload_task_preempt::from_switchto)
+      .def_readwrite("was_latched", &ghost_msg_payload_task_preempt::was_latched);
+    PB__ghost.def("cast_payload_preempt", &cast_payload_preempt, py::return_value_policy::reference);
+
+    py::class_<ghost_msg_payload_task_yield>(PB__ghost, "ghost_msg_payload_task_yield")
+      .def_readwrite("gtid", &ghost_msg_payload_task_yield::gtid)
+      .def_readwrite("runtime", &ghost_msg_payload_task_yield::runtime)
+      .def_readwrite("cpu_seqnum", &ghost_msg_payload_task_yield::cpu_seqnum)
+      .def_readwrite("agent_data", &ghost_msg_payload_task_yield::agent_data)
+      .def_readwrite("cpu", &ghost_msg_payload_task_yield::cpu)
+      .def_readwrite("from_switchto", &ghost_msg_payload_task_yield::from_switchto);
+    PB__ghost.def("cast_payload_yield", &cast_payload_yield, py::return_value_policy::reference);
+
+    py::class_<ghost_msg_payload_task_blocked>(PB__ghost, "ghost_msg_payload_task_blocked")
+      .def_readwrite("gtid", &ghost_msg_payload_task_blocked::gtid)
+      .def_readwrite("runtime", &ghost_msg_payload_task_blocked::runtime)
+      .def_readwrite("cpu_seqnum", &ghost_msg_payload_task_blocked::cpu_seqnum)
+      .def_readwrite("cpu", &ghost_msg_payload_task_blocked::cpu)
+      .def_readwrite("from_switchto", &ghost_msg_payload_task_blocked::from_switchto);
+    PB__ghost.def("cast_payload_blocked", &cast_payload_blocked, py::return_value_policy::reference);
+
+    py::class_<ghost_msg_payload_task_dead>(PB__ghost, "ghost_msg_payload_task_dead")
+      .def_readwrite("gtid", &ghost_msg_payload_task_dead::gtid);
+    PB__ghost.def("cast_payload_dead", &cast_payload_dead, py::return_value_policy::reference);
+
+    py::class_<ghost_msg_payload_task_departed>(PB__ghost, "ghost_msg_payload_task_departed")
+      .def_readwrite("gtid", &ghost_msg_payload_task_departed::gtid)
+      .def_readwrite("cpu_seqnum", &ghost_msg_payload_task_departed::cpu_seqnum)
+      .def_readwrite("cpu", &ghost_msg_payload_task_departed::cpu)
+      .def_readwrite("from_switchto", &ghost_msg_payload_task_departed::from_switchto)
+      .def_readwrite("was_current", &ghost_msg_payload_task_departed::was_current);
+    PB__ghost.def("cast_payload_departed", &cast_payload_departed, py::return_value_policy::reference);
+
+    py::class_<ghost_msg_payload_task_wakeup>(PB__ghost, "ghost_msg_payload_task_wakeup")
+      .def_readwrite("gtid", &ghost_msg_payload_task_wakeup::gtid)
+      .def_readwrite("agent_data", &ghost_msg_payload_task_wakeup::agent_data)
+      .def_readwrite("deferrable", &ghost_msg_payload_task_wakeup::deferrable)
+      .def_readwrite("last_ran_cpu", &ghost_msg_payload_task_wakeup::last_ran_cpu)
+      .def_readwrite("wake_up_cpu", &ghost_msg_payload_task_wakeup::wake_up_cpu)
+      .def_readwrite("waker_cpu", &ghost_msg_payload_task_wakeup::waker_cpu);
+    PB__ghost.def("cast_payload_wakeup", &cast_payload_wakeup, py::return_value_policy::reference);
   }
 
 }
