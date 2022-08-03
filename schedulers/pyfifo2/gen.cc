@@ -1333,7 +1333,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__RunRequest.def("Abort", &RunRequest::Abort);
       PB__RunRequest.def("LocalYield", &RunRequest::LocalYield, py::call_guard<py::gil_scoped_release>());
       PB__RunRequest.def("Ping", &RunRequest::Ping);
-      PB__RunRequest.def("Commit", &RunRequest::Commit);
+      PB__RunRequest.def("Commit", &RunRequest::Commit, py::call_guard<py::gil_scoped_release>());
       PB__RunRequest.def("Submit", &RunRequest::Submit);
       PB__RunRequest.def("cpu", &RunRequest::cpu);
       PB__RunRequest.def("state", &RunRequest::state);
@@ -1380,10 +1380,10 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
     }
 
     py::class_<TaskAllocator<PyTask>, TrPB__TaskAllocator_PyTask_, std::shared_ptr<TaskAllocator<PyTask>>> PB__TaskAllocator_PyTask_(PB__ghost, "TaskAllocator_PyTask_"); {
-      PB__TaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid>(&TaskAllocator<PyTask>::GetTask));
-      PB__TaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid, ghost_sw_info>(&TaskAllocator<PyTask>::GetTask));
-      PB__TaskAllocator_PyTask_.def("FreeTask", &TaskAllocator<PyTask>::FreeTask);
-      PB__TaskAllocator_PyTask_.def("ForEachTask", &TaskAllocator<PyTask>::ForEachTask);
+      PB__TaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid>(&TaskAllocator<PyTask>::GetTask), py::call_guard<py::gil_scoped_release>());
+      PB__TaskAllocator_PyTask_.def("GetTask", py::overload_cast<ghost::Gtid, ghost_sw_info>(&TaskAllocator<PyTask>::GetTask), py::call_guard<py::gil_scoped_release>());
+      PB__TaskAllocator_PyTask_.def("FreeTask", &TaskAllocator<PyTask>::FreeTask, py::call_guard<py::gil_scoped_release>());
+      PB__TaskAllocator_PyTask_.def("ForEachTask", &TaskAllocator<PyTask>::ForEachTask, py::call_guard<py::gil_scoped_release>());
     }
 
     py::class_<SingleThreadMallocTaskAllocator<PyTask>, TaskAllocator<PyTask>, TrPB__SingleThreadMallocTaskAllocator_PyTask_, std::shared_ptr<SingleThreadMallocTaskAllocator<PyTask>>> PB__SingleThreadMallocTaskAllocator_PyTask_(PB__ghost, "SingleThreadMallocTaskAllocator_PyTask_"); {
@@ -1475,7 +1475,7 @@ PYBIND11_MODULE(libpyfifo2_bind, PB__m) {
       PB__BasicDispatchScheduler_PyTask_.def("GetDefaultChannel", &BasicDispatchScheduler<PyTask>::GetDefaultChannel);
       //PB__BasicDispatchScheduler_PyTask_.def("SchedTopology", &BasicDispatchScheduler<PyTask>::SchedTopology);
       PB__BasicDispatchScheduler_PyTask_.def("DumpState", &BasicDispatchScheduler<PyTask>::DumpState);
-      PB__BasicDispatchScheduler_PyTask_.def("DispatchMessage", &BasicDispatchScheduler<PyTask>::DispatchMessage);
+      PB__BasicDispatchScheduler_PyTask_.def("DispatchMessage", &BasicDispatchScheduler<PyTask>::DispatchMessage, py::call_guard<py::gil_scoped_release>());
       PB__BasicDispatchScheduler_PyTask_.def("DiscoverTasks", &BasicDispatchScheduler<PyTask>::DiscoverTasks);
 
       PB__BasicDispatchScheduler_PyTask_.def("TaskNew", &PuPB__BasicDispatchScheduler_PyTask_::TaskNew);

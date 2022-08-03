@@ -16,14 +16,15 @@ kRunnable = 1
 kQueued = 2
 kOnCpu = 3
 
+def prefix(x):
+    return x*" " + str(x) + (8-x)*" "
+
 class TaskData:
     def __init__(self):
         self.run_state = kBlocked
         self.cpu = -1
         self.preempted = False
         self.prio_boost = False
-    def __del__(self):
-        print("DEL!")
 
 def attach_data(task):
     if type(task.pydata) is not TaskData:
@@ -104,7 +105,6 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
         return self.default_channel_
 
     def TaskNew(self, task, msg):
-        print("new")
         attach_data(task)
         payload = ghost.cast_payload_new(msg.payload())
         task.seqnum = msg.seqnum()
@@ -115,17 +115,15 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
             task.pydata.run_state = kBlocked
 
     def TaskRunnable(self, task, msg):
-        print("runnable")
         payload = ghost.cast_payload_wakeup(msg.payload())
         task.pydata.run_state = kRunnable
         task.pydata.prio_boost = not payload.deferrable
         if task.pydata.cpu < 0:
             self.Migrate(task, self.AssignCpu(task), msg.seqnum())
         else:
-            self.cpu_state_of(task).pydata.enqueue(task)
+            self.cpu_state_of(task).enqueue(task)
 
     def TaskDeparted(self, task, msg):
-        print("departed")
         payload = ghost.cast_payload_departed(msg.payload())
         if task.pydata.run_state == kOnCpu or payload.from_switchto:
             self.TaskOffCpu(task, False, payload.from_switchto)
@@ -138,12 +136,10 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
         self.allocator().FreeTask(task)
 
     def TaskDead(self, task, msg):
-        print("dead")
         payload = ghost.cast_payload_dead(msg.payload())
         self.allocator().FreeTask(task)
 
     def TaskYield(self, task, msg):
-        print("yield")
         payload = ghost.cast_payload_yield(msg.payload())
         self.TaskOffCpu(task, False, payload.from_switchto)
         self.cpu_state_of(task).enqueue(task)
@@ -151,14 +147,12 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
             self.enclave().GetAgent(ghost.GetCpu(payload.cpu)).Ping()
 
     def TaskBlocked(self, task, msg):
-        print("blocked")
         payload = ghost.cast_payload_blocked(msg.payload())
         self.TaskOffCpu(task, False, payload.from_switchto)
         if payload.from_switchto:
             self.enclave().GetAgent(ghost.GetCpu(payload.cpu)).Ping()
 
     def TaskPreempted(self, task, msg):
-        print("preempt")
         payload = ghost.cast_payload_preempt(msg.payload())
         self.TaskOffCpu(task, False, payload.from_switchto)
         task.pydata.preempted = True
@@ -219,18 +213,12 @@ class PyScheduler(ghost.BasicDispatchScheduler_PyTask_):
             req.LocalYield(agent_barrier, flags)
 
     def Schedule(self, cpu, agent_sw):
-        print("schedule")
         agent_barrier = agent_sw.barrier()
         cs = self.cpu_states[cpu.id()]
-        print(cpu.id(), "peek")
         msg = ghost.Peek(cs.channel)
-        print(cpu.id(), "peeked")
         while not msg.empty():
-            print(cpu.id(), "msg", msg.describe_type())
-            #import time; time.sleep(1)
             self.DispatchMessage(msg)
             ghost.Consume(cs.channel, msg)
-            print(cpu.id(), "consummed")
             msg = ghost.Peek(cs.channel)
 
         self.PySchedule(cpu, agent_barrier, agent_sw.boosted_priority())
@@ -242,15 +230,11 @@ class PyAgent(ghost.LocalAgent):
         self.scheduler_ = scheduler
 
     def AgentThread(self):
-        print("AgentThread", self.cpu().id())
         self.gtid().assign_name("Agent:"+str(self.cpu().id()))
         self.SignalReady()
-        print("signal ready")
         self.WaitForEnclaveReady()
-        print("enclave ready")
         while not self.Finished() or not scheduler_.Empty(cpu()):
             self.scheduler_.Schedule(self.cpu(), self.status_word())
-        print("Thread exit")
 
     def AgentScheduler(self):
         return self.scheduler_
@@ -259,14 +243,10 @@ class FullPyAgent(ghost.FullAgent_LocalEnclave_PyAgentConfig_):
     def __init__(self, config):
         ghost.FullAgent_LocalEnclave_PyAgentConfig_.__init__(self, config)
         self.scheduler_ = PyScheduler(self.enclave_, self.enclave_.cpus())
-        print("=======1")
         self.StartAgentTasks()
-        print("=======2")
         self.enclave_.Ready()
-        print("=======3")
 
     def __del__(self):
-        print("oskour")
         self.scheduler_.ValidatePreExitState()
         self.TerminateAgentTasks()
 
